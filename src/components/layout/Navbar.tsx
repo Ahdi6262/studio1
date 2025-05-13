@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -30,8 +29,8 @@ export default function Navbar() {
           <Button
             variant="ghost"
             className={cn(
-              "justify-start text-foreground hover:bg-accent/20 hover:text-accent-foreground",
-              pathname === link.href && "text-primary font-semibold" // Updated: removed background, set text to primary for active mobile links
+              "justify-start text-foreground hover:bg-accent/20 hover:text-primary",
+              pathname === link.href && "text-primary font-semibold [text-shadow:0_0_7px_hsl(var(--primary)/0.7)]"
             )}
           >
             <link.icon className="mr-2 h-5 w-5" />
@@ -57,8 +56,8 @@ export default function Navbar() {
               <Button
                 variant="ghost"
                 className={cn(
-                  "text-foreground hover:text-primary",
-                  pathname === link.href && "text-primary font-semibold"
+                  "text-foreground hover:bg-accent/20 hover:text-primary",
+                  pathname === link.href && "text-primary font-semibold [text-shadow:0_0_7px_hsl(var(--primary)/0.7)]"
                 )}
               >
                 {link.label}
@@ -77,7 +76,7 @@ export default function Navbar() {
           ) : (
             <>
               <Link href="/login" passHref>
-                <Button variant="ghost" className="text-foreground hover:text-primary">
+                <Button variant="ghost" className="text-foreground hover:bg-accent/20 hover:text-primary">
                   <LogIn className="mr-2 h-5 w-5" /> Login
                 </Button>
               </Link>
@@ -116,7 +115,7 @@ export default function Navbar() {
                 ) : (
                   <>
                     <Link href="/login" passHref>
-                      <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary">
+                      <Button variant="ghost" className="w-full justify-start text-foreground hover:bg-accent/20 hover:text-primary">
                         <LogIn className="mr-2 h-5 w-5" /> Login
                       </Button>
                     </Link>
