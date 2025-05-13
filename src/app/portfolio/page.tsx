@@ -1,6 +1,6 @@
 
 "use client";
-import type { Project } from '@/types';
+import type { ApiProject } from '@/types';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -8,23 +8,54 @@ import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter } from 'lucide-react';
-import { useState } from 'react';
+import { Search, Filter, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
-const mockProjects: Project[] = [
-  { id: '1', title: 'E-commerce Platform', description: 'A full-featured e-commerce platform with modern UI.', imageUrl: 'https://picsum.photos/seed/project1/600/400', tags: ['React', 'Node.js', 'MongoDB'], detailsUrl: '/portfolio/1' },
-  { id: '2', title: 'Social Media App', description: 'A social networking app for connecting people.', imageUrl: 'https://picsum.photos/seed/project2/600/400', tags: ['Next.js', 'Firebase', 'TailwindCSS'], detailsUrl: '/portfolio/2' },
-  { id: '3', title: 'Data Visualization Dashboard', description: 'An interactive dashboard for visualizing complex datasets.', imageUrl: 'https://picsum.photos/seed/project3/600/400', tags: ['D3.js', 'Python', 'Flask'], detailsUrl: '/portfolio/3' },
-  { id: '4', title: 'Mobile Game "Pixel Adventure"', description: 'A retro-style pixel art adventure game for mobile devices.', imageUrl: 'https://picsum.photos/seed/project4/600/400', tags: ['Unity', 'C#', 'Pixel Art'], detailsUrl: '/portfolio/4' },
-];
+const RUST_API_URL = process.env.NEXT_PUBLIC_RUST_API_URL || 'http://localhost:8000';
+
+async function getProjectsFromApi(): Promise<ApiProject[]> {
+  try {
+    const res = await fetch(`${RUST_API_URL}/api/projects`, { cache: 'no-store' });
+    if (!res.ok) {
+      console.error('Failed to fetch projects from Rust backend:', res.status, await res.text());
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching projects from Rust backend:', error);
+    return [];
+  }
+}
+
 
 export default function PortfolioPage() {
+  const [allProjects, setAllProjects] = useState<ApiProject[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterTag, setFilterTag] = useState('all');
+  
+  useEffect(() => {
+    async function loadProjects() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const projects = await getProjectsFromApi();
+        setAllProjects(projects);
+      } catch (e) {
+        setError("Failed to load projects.");
+        console.error(e);
+      }
+      setIsLoading(false);
+    }
+    loadProjects();
+  }, []);
 
-  const allTags = Array.from(new Set(mockProjects.flatMap(p => p.tags)));
 
-  const filteredProjects = mockProjects.filter(project => {
+  const allTags = Array.from(new Set(allProjects.flatMap(p => p.tags)));
+
+  const filteredProjects = allProjects.filter(project => {
     const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           project.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTag = filterTag === 'all' || project.tags.includes(filterTag);
@@ -35,7 +66,7 @@ export default function PortfolioPage() {
     <div className="space-y-8">
       <section className="text-center py-8">
         <h1 className="text-4xl font-bold text-foreground mb-2">Our Portfolio</h1>
-        <p className="text-lg text-muted-foreground">Explore the innovative projects crafted by our talented community.</p>
+        <p className="text-lg text-muted-foreground">Explore the innovative projects crafted by our talented community (data from Rust API).</p>
       </section>
 
       <div className="flex flex-col md:flex-row gap-4 mb-8 p-4 bg-card rounded-lg shadow">
@@ -65,7 +96,19 @@ export default function PortfolioPage() {
         </div>
       </div>
       
-      {filteredProjects.length > 0 ? (
+      {isLoading && (
+          <div className="flex justify-center items-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-2 text-muted-foreground">Loading projects...</p>
+          </div>
+      )}
+      {error && !isLoading && (
+           <div className="text-center py-10 text-destructive">
+            <p>{error}</p>
+          </div>
+      )}
+
+      {!isLoading && !error && filteredProjects.length > 0 ? (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredProjects.map((project) => (
             <Card key={project.id} className="flex flex-col overflow-hidden bg-card hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1">
@@ -87,7 +130,7 @@ export default function PortfolioPage() {
                 </div>
               </CardContent>
               <CardFooter className="p-6 pt-0">
-                <Link href={project.detailsUrl} className="w-full">
+                <Link href={`/portfolio/${project.id}`} className="w-full">
                   <Button variant="outline" className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground">
                     View Details
                   </Button>
@@ -97,7 +140,7 @@ export default function PortfolioPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-10">
+        !isLoading && !error && <div className="text-center py-10">
           <p className="text-xl text-muted-foreground">No projects found matching your criteria.</p>
         </div>
       )}

@@ -1,40 +1,68 @@
 
 "use client";
-import type { Course } from '@/types';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import type { ApiCourse } from '@/types';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Star, Users, Search, Filter, GraduationCap } from 'lucide-react';
+import { Star, Users, Search, Filter, GraduationCap, Loader2 } from 'lucide-react';
 import CourseRecommendations from '@/components/features/CourseRecommendations';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const mockCourses: Course[] = [
-  { id: '1', title: 'Advanced Web Development Bootcamp', description: 'Master modern web technologies including React, Node.js, and GraphQL.', imageUrl: 'https://picsum.photos/seed/course1/600/300', author: 'Jane Doe', rating: 4.8, studentCount: 1250, price: '$99', detailsUrl: '/courses/1', category: 'Web Development', level: 'Advanced' },
-  { id: '2', title: 'Introduction to Machine Learning', description: 'Learn the fundamentals of machine learning and AI with Python.', imageUrl: 'https://picsum.photos/seed/course2/600/300', author: 'John Smith', rating: 4.9, studentCount: 3400, price: 'Free', detailsUrl: '/courses/2', category: 'Data Science', level: 'Beginner' },
-  { id: '3', title: 'UI/UX Design Masterclass', description: 'Create stunning user interfaces and experiences from scratch.', imageUrl: 'https://picsum.photos/seed/course3/600/300', author: 'Alice Brown', rating: 4.7, studentCount: 800, price: '$49', detailsUrl: '/courses/3', category: 'Design', level: 'Intermediate' },
-  { id: '4', title: 'Cybersecurity Essentials', description: 'Protect systems and data from cyber threats. Learn ethical hacking.', imageUrl: 'https://picsum.photos/seed/course4/600/300', author: 'Bob Green', rating: 4.6, studentCount: 1500, price: '$79', detailsUrl: '/courses/4', category: 'Cybersecurity', level: 'Intermediate' },
-];
+const RUST_API_URL = process.env.NEXT_PUBLIC_RUST_API_URL || 'http://localhost:8000';
 
-const allCategories = Array.from(new Set(mockCourses.map(c => c.category).filter(Boolean))) as string[];
-const allLevels = Array.from(new Set(mockCourses.map(c => c.level).filter(Boolean))) as ('Beginner' | 'Intermediate' | 'Advanced')[];
-
+async function getCoursesFromApi(): Promise<ApiCourse[]> {
+  try {
+    const res = await fetch(`${RUST_API_URL}/api/courses`, { cache: 'no-store' });
+    if (!res.ok) {
+      console.error('Failed to fetch courses from Rust backend:', res.status, await res.text());
+      return [];
+    }
+    return await res.json();
+  } catch (error) {
+    console.error('Error fetching courses from Rust backend:', error);
+    return [];
+  }
+}
 
 export default function CoursesPage() {
+  const [allCourses, setAllCourses] = useState<ApiCourse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterLevel, setFilterLevel] = useState('all');
+  
+  useEffect(() => {
+    async function loadCourses() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const courses = await getCoursesFromApi();
+        setAllCourses(courses);
+      } catch (e) {
+        setError("Failed to load courses.");
+        console.error(e);
+      }
+      setIsLoading(false);
+    }
+    loadCourses();
+  }, []);
 
-  const filteredCourses = mockCourses.filter(course => {
+  const filteredCourses = allCourses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           course.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'all' || course.category === filterCategory;
     const matchesLevel = filterLevel === 'all' || course.level === filterLevel;
     return matchesSearch && matchesCategory && matchesLevel;
   });
+
+  const allCategories = Array.from(new Set(allCourses.map(c => c.category).filter(Boolean)));
+  const allLevels = Array.from(new Set(allCourses.map(c => c.level).filter(Boolean)));
   
   return (
     <div className="space-y-12">
@@ -43,7 +71,6 @@ export default function CoursesPage() {
         <p className="text-lg text-muted-foreground">Unlock your potential with our diverse range of expert-led courses.</p>
       </section>
 
-      {/* AI Recommendations Section */}
       <CourseRecommendations />
       
       <section className="space-y-8">
@@ -89,7 +116,20 @@ export default function CoursesPage() {
           </div>
         </div>
 
-        {filteredCourses.length > 0 ? (
+        {isLoading && (
+          <div className="flex justify-center items-center py-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-2 text-muted-foreground">Loading courses...</p>
+          </div>
+        )}
+
+        {error && !isLoading && (
+           <div className="text-center py-10 text-destructive">
+            <p>{error}</p>
+          </div>
+        )}
+
+        {!isLoading && !error && filteredCourses.length > 0 && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredCourses.map((course) => (
               <Card key={course.id} className="flex flex-col overflow-hidden bg-card hover:shadow-xl transition-all duration-300 ease-in-out transform hover:-translate-y-1">
@@ -110,7 +150,7 @@ export default function CoursesPage() {
                 </CardHeader>
                 <CardContent className="p-6 flex-grow">
                   <CardTitle className="text-xl font-semibold mb-2 text-foreground">{course.title}</CardTitle>
-                  <p className="text-sm text-muted-foreground mb-1">By {course.author}</p>
+                  <p className="text-sm text-muted-foreground mb-1">By {course.authorName}</p>
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-3">
                     {course.rating && (
                       <span className="flex items-center">
@@ -130,7 +170,7 @@ export default function CoursesPage() {
                   </div>
                 </CardContent>
                 <CardFooter className="p-6 pt-0">
-                  <Link href={course.detailsUrl} className="w-full">
+                  <Link href={`/courses/${course.id}`} className="w-full">
                     <Button variant="default" className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                       View Course
                     </Button>
@@ -139,7 +179,8 @@ export default function CoursesPage() {
               </Card>
             ))}
           </div>
-        ) : (
+        )}
+        {!isLoading && !error && filteredCourses.length === 0 && (
            <div className="text-center py-10">
             <p className="text-xl text-muted-foreground">No courses found matching your criteria.</p>
           </div>

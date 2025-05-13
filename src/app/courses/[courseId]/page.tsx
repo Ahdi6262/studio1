@@ -1,21 +1,30 @@
 
-import type { Course } from '@/types';
+import type { ApiCourse } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Star, Users, PlayCircle, Clock, BarChart, Download, CheckCircle } from 'lucide-react';
 
-// Mock data - in a real app, this would be fetched based on params.courseId
-const mockCourses: Course[] = [
-   { id: '1', title: 'Advanced Web Development Bootcamp', description: 'Master modern web technologies including React, Node.js, and GraphQL.', imageUrl: 'https://picsum.photos/seed/course1/1200/600', author: 'Jane Doe', rating: 4.8, studentCount: 1250, price: '$99', detailsUrl: '/courses/1', category: 'Web Development', level: 'Advanced', duration: '12 Weeks', lessons: [{title: 'Introduction', duration: '30m'}, {title: 'React Basics', duration: '2h'}, {title: 'Advanced State Management', duration: '3h'}], instructor: {name: 'Jane Doe', bio: 'Lead Engineer at TechCorp, 10+ years experience.', avatarUrl: 'https://picsum.photos/seed/instructor1/100/100'}},
-  { id: '2', title: 'Introduction to Machine Learning', description: 'Learn the fundamentals of machine learning and AI with Python.', imageUrl: 'https://picsum.photos/seed/course2/1200/600', author: 'John Smith', rating: 4.9, studentCount: 3400, price: 'Free', detailsUrl: '/courses/2', category: 'Data Science', level: 'Beginner', duration: '8 Weeks', lessons: [{title: 'What is ML?', duration: '45m'}, {title: 'Python for ML', duration: '2h 30m'}], instructor: {name: 'John Smith', bio: 'Data Scientist at AI Innovations, PhD in CS.', avatarUrl: 'https://picsum.photos/seed/instructor2/100/100'}},
-];
+const RUST_API_URL = process.env.RUST_API_URL || 'http://localhost:8000';
 
+async function getCourseById(courseId: string): Promise<ApiCourse | null> {
+  try {
+    const res = await fetch(`${RUST_API_URL}/api/courses/${courseId}`, { cache: 'no-store' });
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      console.error(`Failed to fetch course ${courseId} from Rust backend:`, res.status, await res.text());
+      return null;
+    }
+    return await res.json();
+  } catch (error) {
+    console.error(`Error fetching course ${courseId} from Rust backend:`, error);
+    return null;
+  }
+}
 
-export default function CourseDetailPage({ params }: { params: { courseId: string } }) {
-  const course = mockCourses.find(c => c.id === params.courseId);
+export default async function CourseDetailPage({ params }: { params: { courseId: string } }) {
+  const course = await getCourseById(params.courseId);
 
   if (!course) {
     return (
@@ -72,16 +81,21 @@ export default function CourseDetailPage({ params }: { params: { courseId: strin
               </div>
 
               <h3 className="text-2xl font-semibold text-foreground mb-3">Course Content</h3>
-              <ul className="space-y-2 mb-6">
-                {course.lessons?.map((lesson, index) => (
-                  <li key={index} className="flex items-center justify-between p-3 bg-background/50 rounded-md">
-                    <span className="flex items-center text-foreground">
-                      <PlayCircle className="h-5 w-5 mr-2 text-primary" /> {lesson.title}
-                    </span>
-                    <span className="text-sm text-muted-foreground">{lesson.duration}</span>
-                  </li>
-                ))}
-              </ul>
+              {course.lessons && course.lessons.length > 0 ? (
+                <ul className="space-y-2 mb-6">
+                  {course.lessons?.map((lesson, index) => (
+                    <li key={index} className="flex items-center justify-between p-3 bg-background/50 rounded-md">
+                      <span className="flex items-center text-foreground">
+                        <PlayCircle className="h-5 w-5 mr-2 text-primary" /> {lesson.title}
+                      </span>
+                      <span className="text-sm text-muted-foreground">{lesson.duration}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground mb-6">Course content details are not available yet.</p>
+              )}
+
 
               {course.instructor && (
                 <>
@@ -119,3 +133,20 @@ export default function CourseDetailPage({ params }: { params: { courseId: strin
   );
 }
 
+// Helper function to generate static paths if using SSG
+export async function generateStaticParams() {
+ try {
+    const res = await fetch(`${RUST_API_URL}/api/courses`);
+    if (!res.ok) {
+      console.error('Failed to fetch courses for static params from Rust backend:', res.status, await res.text());
+      return [];
+    }
+    const courses: ApiCourse[] = await res.json();
+    return courses.map((course) => ({
+      courseId: course.id,
+    }));
+  } catch (error) {
+    console.error('Error fetching courses for static params from Rust backend:', error);
+    return [];
+  }
+}

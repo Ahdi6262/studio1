@@ -1,5 +1,5 @@
 
-import { Project } from '@/types';
+import { ApiProject } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,17 +7,25 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Github } from 'lucide-react';
 
-// Mock data - in a real app, this would be fetched based on params.projectId
-const mockProjects: Project[] = [
-  { id: '1', title: 'E-commerce Platform', description: 'A full-featured e-commerce platform with modern UI.', imageUrl: 'https://picsum.photos/seed/project1/800/500', tags: ['React', 'Node.js', 'MongoDB'], detailsUrl: '/portfolio/1', longDescription: 'This project is a comprehensive e-commerce solution designed for scalability and user experience. It features product listings, user authentication, shopping cart functionality, and an admin panel for managing products and orders. Built with a MERN stack, it leverages modern web technologies for optimal performance.', technologies: ['React', 'Redux', 'Node.js', 'Express.js', 'MongoDB', 'Stripe API'], liveLink: '#', repoLink: '#', date: '2023-05-15' },
-  { id: '2', title: 'Social Media App', description: 'A social networking app for connecting people.', imageUrl: 'https://picsum.photos/seed/project2/800/500', tags: ['Next.js', 'Firebase', 'TailwindCSS'], detailsUrl: '/portfolio/2', longDescription: 'A dynamic social media application enabling users to share updates, connect with friends, and discover new content. Features include real-time notifications, a news feed, user profiles, and direct messaging. The tech stack focuses on serverless architecture and real-time database capabilities.', technologies: ['Next.js', 'Firebase Auth', 'Firestore', 'Tailwind CSS', 'Vercel'], liveLink: '#', repoLink: '#', date: '2023-08-20' },
-  { id: '3', title: 'Data Visualization Dashboard', description: 'An interactive dashboard for visualizing complex datasets.', imageUrl: 'https://picsum.photos/seed/project3/800/500', tags: ['D3.js', 'Python', 'Flask'], detailsUrl: '/portfolio/3', longDescription: 'This dashboard provides powerful tools for data analysis and visualization. Users can upload datasets, generate various chart types, and customize views to gain insights. The backend is built with Python and Flask, serving data to a D3.js-powered frontend.', technologies: ['D3.js', 'JavaScript', 'Python', 'Flask', 'Pandas'], liveLink: '#', repoLink: '#', date: '2022-11-10' },
-  { id: '4', title: 'Mobile Game "Pixel Adventure"', description: 'A retro-style pixel art adventure game for mobile devices.', imageUrl: 'https://picsum.photos/seed/project4/800/500', tags: ['Unity', 'C#', 'Pixel Art'], detailsUrl: '/portfolio/4', longDescription: 'Pixel Adventure is an engaging 2D platformer game with a charming pixel art style. It features multiple levels, challenging enemies, and a unique storyline. Developed using Unity, it is optimized for both Android and iOS platforms.', technologies: ['Unity Engine', 'C#', 'Aseprite', 'Mobile Optimization'], liveLink: '#', repoLink: '#', date: '2024-01-05' },
-];
+const RUST_API_URL = process.env.RUST_API_URL || 'http://localhost:8000';
 
+async function getProjectById(projectId: string): Promise<ApiProject | null> {
+  try {
+    const res = await fetch(`${RUST_API_URL}/api/projects/${projectId}`, { cache: 'no-store' });
+    if (!res.ok) {
+      if (res.status === 404) return null;
+      console.error(`Failed to fetch project ${projectId} from Rust backend:`, res.status, await res.text());
+      return null;
+    }
+    return await res.json();
+  } catch (error) {
+    console.error(`Error fetching project ${projectId} from Rust backend:`, error);
+    return null;
+  }
+}
 
-export default function ProjectDetailPage({ params }: { params: { projectId: string } }) {
-  const project = mockProjects.find(p => p.id === params.projectId);
+export default async function ProjectDetailPage({ params }: { params: { projectId: string } }) {
+  const project = await getProjectById(params.projectId);
 
   if (!project) {
     return (
@@ -67,7 +75,8 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
           {project.longDescription && (
             <div className="prose prose-invert max-w-none text-foreground/90 mb-6">
               <h3 className="text-xl font-semibold text-foreground mb-2">About this project:</h3>
-              <p>{project.longDescription}</p>
+              {/* Using a div for long description as prose might not handle plain text well if it's not HTML */}
+              <div dangerouslySetInnerHTML={{ __html: project.longDescription.replace(/\n/g, '<br />') }} />
             </div>
           )}
 
@@ -91,4 +100,22 @@ export default function ProjectDetailPage({ params }: { params: { projectId: str
       </Card>
     </div>
   );
+}
+
+// Helper function to generate static paths if using SSG
+export async function generateStaticParams() {
+  try {
+    const res = await fetch(`${RUST_API_URL}/api/projects`);
+    if (!res.ok) {
+      console.error('Failed to fetch projects for static params from Rust backend:', res.status, await res.text());
+      return [];
+    }
+    const projects: ApiProject[] = await res.json();
+    return projects.map((project) => ({
+      projectId: project.id,
+    }));
+  } catch (error) {
+    console.error('Error fetching projects for static params from Rust backend:', error);
+    return [];
+  }
 }
