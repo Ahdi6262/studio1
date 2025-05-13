@@ -120,15 +120,3 @@ body {
     backdrop-filter: blur(10px);
   }
 }
-
-/* Frosted glass effect for specific cards with cyan tint */
-.frosted-glass-cyan {
-  background-color: rgba(0, 255, 255, 0.2); /* 20% transparent cyan */
-}
-
-@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
-  .frosted-glass-cyan {
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-  }
-}

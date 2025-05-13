@@ -35,7 +35,7 @@ export default function Home() {
 
       {/* Features Section */}
       <section className="grid md:grid-cols-3 gap-8">
-        <Card className="frosted-glass-cyan hover:shadow-xl transition-shadow duration-300">
+        <Card className="bg-card hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
             <div className="p-3 bg-primary/20 rounded-md inline-block mb-4">
               <Briefcase className="h-8 w-8 text-primary" />
@@ -51,7 +51,7 @@ export default function Home() {
             </Link>
           </CardContent>
         </Card>
-        <Card className="frosted-glass-cyan hover:shadow-xl transition-shadow duration-300">
+        <Card className="bg-card hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
             <div className="p-3 bg-primary/20 rounded-md inline-block mb-4">
               <BookOpen className="h-8 w-8 text-primary" />
@@ -67,7 +67,7 @@ export default function Home() {
             </Link>
           </CardContent>
         </Card>
-        <Card className="frosted-glass-cyan hover:shadow-xl transition-shadow duration-300">
+        <Card className="bg-card hover:shadow-xl transition-shadow duration-300">
           <CardHeader>
              <div className="p-3 bg-primary/20 rounded-md inline-block mb-4">
               <Trophy className="h-8 w-8 text-primary" />
