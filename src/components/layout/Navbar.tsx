@@ -31,7 +31,7 @@ export default function Navbar() {
             variant="ghost"
             className={cn(
               "justify-start text-foreground hover:bg-accent/20 hover:text-accent-foreground",
-              pathname === link.href && "bg-accent/30 text-accent-foreground font-semibold"
+              pathname === link.href && "text-primary font-semibold" // Updated: removed background, set text to primary for active mobile links
             )}
           >
             <link.icon className="mr-2 h-5 w-5" />
