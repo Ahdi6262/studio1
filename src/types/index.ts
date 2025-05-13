@@ -1,59 +1,24 @@
 
-export interface Project {
-  id: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  tags: string[];
-  detailsUrl: string; 
-  longDescription?: string;
-  technologies?: string[];
-  liveLink?: string;
-  repoLink?: string;
-  date?: string;
-}
+// Types for Project, Course, LeaderboardUser, BlogPost will now be primarily sourced from Prisma Client.
+// Example: import type { Project as PrismaProject } from '@prisma/client';
 
-export interface Course {
-  id: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  author: string;
-  rating?: number;
-  studentCount?: number;
-  price?: string; 
-  detailsUrl: string;
-  category?: string;
-  level?: 'Beginner' | 'Intermediate' | 'Advanced';
-  duration?: string;
-  lessons?: { title: string, duration: string }[];
-  instructor?: { name: string, bio: string, avatarUrl: string };
-}
-
-export interface LeaderboardUser {
-  id: string;
-  rank: number;
-  name: string;
-  avatarUrl: string;
-  points: number;
-  achievements: string[]; // badge names or image URLs
-}
-
-export interface BlogPost {
-  id:string;
-  title: string;
-  slug: string;
-  summary: string;
-  author: string;
-  authorAvatar?: string;
-  date: string;
-  imageUrl: string;
-  content?: string; // Full content for detail page
-  tags?: string[];
-}
-
+// This type is for the client-side LifeTracker component and is not stored in the database yet.
 export interface LifeStage {
   name: string;
   color: string; // Tailwind color class e.g. bg-blue-500
   endAge: number;
 }
+
+// You can define related or augmented types here if needed.
+// For example, if you need a type that combines Prisma types or adds client-side properties.
+
+// Example of how you might use Prisma types along with custom additions:
+/*
+import type { Course as PrismaCourse, Lesson as PrismaLesson, Instructor as PrismaInstructor } from '@prisma/client';
+
+export type CourseWithDetails = PrismaCourse & {
+  lessons: PrismaLesson[];
+  instructor: PrismaInstructor | null;
+  // any additional client-side properties
+};
+*/
